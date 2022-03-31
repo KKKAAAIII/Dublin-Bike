@@ -1,0 +1,1 @@
+0 */1 * * * ~/project/project/tttt/auto.sh >> ~/project/project/tttt/run1.log 2>&1
