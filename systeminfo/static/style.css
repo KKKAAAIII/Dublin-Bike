@@ -1,0 +1,42 @@
+#map {
+    height: 600px;
+}
+
+h1 {
+    font-size: 24px;
+    padding: 1px;
+    margin-top: 80px;
+    margin-bottom: 60px;
+    padding-left: 60px;
+}
+
+#header {
+    background-color: #333;
+    color: white;
+    border: 0px;
+    padding: 1px;
+    margin: 0px 0px 0px 0px;
+    font-size: 24px;
+    padding-left: 60px;
+}
+
+.footer {
+    width: 100%;
+    background-color: #333;
+    color: white;
+    text-align: right;
+}
+
+#openweathermap-widget-21 {
+    padding-left: 60px;
+
+}
+
+.chart {
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 80px 0px;
+}
+
+h1, p {
+    font-family: "Times New Roman", Times, serif;
+}

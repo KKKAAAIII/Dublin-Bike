@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Home</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+    <script>
+        function initMap() {
+            fetch("stations").then(response => {
+                return response.json();
+            }).then(data => {
+                console.log("data:", data)
+
+                var mapProp = {
+                    center: new google.maps.LatLng(53.3472, -6.2592),
+                    zoom: 14,
+                    styles: [{
+                            "featureType": "all",
+                            "stylers": [{
+                                    "saturation": 0
+                                },
+                                {
+                                    "hue": "#e7ecf0"
+                                }
+                            ]
+                        },
+                        {
+                            "featureType": "road",
+                            "stylers": [{
+                                "saturation": -70
+                            }]
+                        },
+                        {
+                            "featureType": "transit",
+                            "stylers": [{
+                                "visibility": "off"
+                            }]
+                        },
+                        {
+                            "featureType": "poi",
+                            "stylers": [{
+                                "visibility": "off"
+                            }]
+                        },
+                        {
+                            "featureType": "water",
+                            "stylers": [{
+                                    "visibility": "simplified"
+                                },
+                                {
+                                    "saturation": -60
+                                }
+                            ]
+                        }
+                    ],
+                    // mapTypeId: "terrain"
+                };
+                var map = new google.maps.Map(document.getElementById("map"), mapProp);
+
+                const svgMarker = {
+                    path: "M10.453 14.016l6.563-6.609-1.406-1.406-5.156 5.203-2.063-2.109-1.406 1.406zM12 2.016q2.906 0 4.945 2.039t2.039 4.945q0 1.453-0.727 3.328t-1.758 3.516-2.039 3.070-1.711 2.273l-0.75 0.797q-0.281-0.328-0.75-0.867t-1.688-2.156-2.133-3.141-1.664-3.445-0.75-3.375q0-2.906 2.039-4.945t4.945-2.039z",
+                    fillColor: "black",
+                    fillOpacity: 0.6,
+                    strokeWeight: 0.5,
+                    rotation: 0,
+                    scale: 1.2,
+                };
+
+                data.forEach(station => {
+                    const marker = new google.maps.Marker({
+                        position: {
+                            lat: station.lat,
+                            lng: station.lng
+                        },
+                        map: map,
+                        number: station.number,
+                        icon: svgMarker,
+                    });
+                    const infowindow = new google.maps.InfoWindow({
+                        content: '<p><b>' + station.name + '</p>' +
+                            '<p><b>bike stands: ' + station.bike_stands + '</p>' +
+                            '<p><b>available bike stands: ' + station.available_bike_stands + '</p>' +
+                            '<p><b>available bikes: ' + station.available_bikes + '</p>'
+                    });
+                    marker.addListener("click", () => {
+                        infowindow.open(map, marker);
+                        google.charts.setOnLoadCallback(function() {
+                            drawChart(marker.number)
+                        });
+                        google.charts.setOnLoadCallback(function() {
+                            drawChartP(marker.number)
+                        });
+                    });
+                });
+
+            }).catch(err => {
+                console.log("opps", err);
+            })
+        }
+
+    </script>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+        google.charts.load('current', {
+            'packages': ['corechart']
+        });
+
+        function drawChart(number) {
+            url = "occupancy/" + number
+            fetch(url).then(response => {
+                return response.json();
+            }).then(data => {
+                console.log("data:", data)
+
+                var chart = new google.visualization.DataTable()
+                chart.addColumn('string', 'time')
+                chart.addColumn('number', 'available_bike_stands')
+                chart.addColumn('number', 'available_bikes')
+
+                data.forEach(station => {
+                    var dt = new Date(parseInt(station.last_update)).toLocaleString().replace(/:\d{1,2}$/, ' ')
+                    chart.addRows([
+                        [dt, station.available_bike_stands, station.available_bikes]
+                    ])
+                });
+                var options = {
+                    'title': 'Station history',
+                    titleTextStyle: {
+                        fontSize: 15,
+                        bold: true
+                    },
+                    colors: ['#333', '#D3D3D3'],
+                    'height': 400,
+                    chartArea: {
+                        left: 100,
+                        width: "61.8%",
+                        height: "50%",
+                        top: 45
+                    },
+                    hAxis: {
+                        slantedText: true,
+                        slantedTextAngle: 90
+                    },
+                };
+
+                // Instantiate and draw our chart, passing in some options.
+                var drawchart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+                var drawchart1 = new google.visualization.LineChart(document.getElementById('chart_div1'));
+                drawchart.draw(chart, options);
+                drawchart1.draw(chart, options);
+
+            }).catch(err => {
+                console.log("opps", err);
+            })
+        }
+
+    </script>
+
+    <script>
+        google.charts.load('current', {
+            'packages': ['corechart']
+        });
+
+        function drawChartP(number) {
+            url = "prediction/" + number
+            fetch(url).then(response => {
+                return response.json();
+            }).then(data => {
+                console.log("data:", data)
+
+                var chart = new google.visualization.DataTable()
+                chart.addColumn('string', 'time')
+                chart.addColumn('number', 'available_bikes')
+
+                data.forEach(station => {
+                    var d = new Date(),
+                        str = '';
+                    str += d.getFullYear() + '-'
+                    str += d.getMonth() + 1 + '-'; //get the month（0——11） 
+                    str += d.getDate() + ' ';
+                    str += d.getHours() + station.lastupdate + 'h';
+                    chart.addRows([
+                        [str, station.available_bikes]
+                    ])
+                });
+                var options = {
+                    'title': 'Station prediction',
+                    titleTextStyle: {
+                        fontSize: 15,
+                        bold: true
+                    },
+                    'height': 300,
+                    colors: ['#333'],
+                    chartArea: {
+                        left: 100,
+                        width: "61.8%"
+                    },
+                };
+
+                var drawchart = new google.visualization.ColumnChart(document.getElementById('chart_divp'));
+                drawchart.draw(chart, options);
+
+            }).catch(err => {
+                console.log("opps", err);
+            })
+        }
+
+    </script>
+    <script src='//openweathermap.org/themes/openweathermap/assets/vendor/owm/js/d3.min.js'></script>
+    <script>
+        window.myWidgetParam ? window.myWidgetParam : window.myWidgetParam = [];
+        window.myWidgetParam.push({
+            id: 21,
+            cityid: '2964574',
+            appid: '86e6d9e6dddfc8dccd6899f2454e98c2',
+            units: 'metric',
+            containerid: 'openweathermap-widget-21',
+        });
+        (function() {
+            var script = document.createElement('script');
+            script.async = true;
+            script.charset = "utf-8";
+            script.src = "//openweathermap.org/themes/openweathermap/assets/vendor/owm/js/weather-widget-generator.js";
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(script, s);
+        })();
+
+    </script>
+
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBHY3W-xvNE-42BipvMY_-lu4aKdnB5xn4&callback=initMap&libraries=&v=weekly" async>
+    </script>
+</head>
+
+<body>
+    <div id="header">
+        <p>THE BIKE MAP</p>
+    </div>
+
+    <div id="map"></div>
+    <div>
+        <h1>Weather</h1>
+    </div>
+    <div id="openweathermap-widget-21"></div>
+    <div>
+        <h1>Graphs</h1>
+    </div>
+    <div class="chart" id="chart_div"></div>
+    <div class="chart" id="chart_div1"></div>
+    <div class="chart" id="chart_divp"></div>
+    <div class="footer">
+        We design the web.
+    </div>
+</body>
+
+</html>
